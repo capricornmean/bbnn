@@ -1,24 +1,27 @@
-import logo from './logo.svg';
 import './App.css';
+import { BrowserRouter, Route, Switch } from "react-router-dom";
+import Home from "./Home.js";
+import Form from "./Form.js";
+import Nav from "./Nav.js";
+import FormComplete from "./FormComplete.js";
+import Login from "./Login.js";
+import Spreadsheet from "./Spreadsheet.js";
+import useToken from "./useToken.js";
 
 function App() {
+  const { token, setToken } = useToken();
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BrowserRouter>
+      <Nav token={token} />
+      <Switch>
+        <Route exact path="/"><Home /></Route>
+        <Route exact path="/form"><Form /></Route>
+        <Route exact path="/formComplete"><FormComplete /></Route>
+        <Route exact path="/login"><Login setToken={setToken} /></Route>
+        <Route exact path="/spreadsheet"><Spreadsheet /></Route>
+      </Switch>
+    </BrowserRouter>
   );
 }
 
