@@ -1,4 +1,3 @@
-import './App.css';
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import Home from "./Home.js";
 import Form from "./Form.js";

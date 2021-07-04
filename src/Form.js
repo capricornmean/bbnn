@@ -95,12 +95,14 @@ export default function Form() {
   }
 
   return (
-    <div className="form-total border rounded">
+    <div className="w-2/3 border-solid border-2 border-gray-300 rounded-md">
       <form onSubmit={handleFormSubmit}>
         <p className="indent-right font-weight-bold">* Required</p>
-        <div class="form-group">
-          <label for="email" className="font-weight-bold">Email*</label>
-          <input className="form-control my-input" type="email" id="email" value={email} onChange={handleEmailChange} placeholder="Your email" required />
+        <div className="flex flex-wrap">
+          <div className="w-full">
+            <label for="email" className="block">Email*</label>
+            <input className="form-control my-input" type="email" id="email" value={email} onChange={handleEmailChange} placeholder="Your email" required />
+          </div>
         </div>
         <div class="form-group">
           <label for="username" className="font-weight-bold">Username*</label>
