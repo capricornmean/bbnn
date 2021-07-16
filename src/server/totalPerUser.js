@@ -1,16 +1,18 @@
-const fs = require('fs');
-const readline = require('readline');
-const { google } = require('googleapis');
+import fs from 'fs';
+import readline from 'readline';
+import { google } from "googleapis";
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 const TOKEN_PATH = 'token.json';
 
-fs.readFile('./key/spreadsheet_key.json', (err, content) => {
-  if (err) return console.log('Error loading client secret file:', err);
-  authorize(JSON.parse(content), readSpreadsheet);
-});
+export default function totalPerUser(fromRow, toRow) {
+  fs.readFile('../key/spreadsheet_key.json', (err, content) => {
+    if (err) return console.log('Error loading client secret file:', err);
+    authorize(JSON.parse(content), readSpreadsheet, fromRow, toRow);
+  });
+}
 
-function authorize(credentials, callback) {
+function authorize(credentials, callback, fromRow, toRow) {
   const { client_secret, client_id, redirect_uris } = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
     client_id, client_secret, redirect_uris[0]);
@@ -18,7 +20,7 @@ function authorize(credentials, callback) {
   fs.readFile(TOKEN_PATH, (err, token) => {
     if (err) return getNewToken(oAuth2Client, callback);
     oAuth2Client.setCredentials(JSON.parse(token));
-    callback(oAuth2Client);
+    callback(oAuth2Client, fromRow, toRow);
   });
 }
 
@@ -47,13 +49,11 @@ function getNewToken(oAuth2Client, callback) {
   });
 }
 
-function printSpreadsheet(sheets, spreadsheetId, data) {
-  let values = [];
-  for (let i = 0; i < data.length; ++i) values.push([data[i].product, data[i].quantity.toString()]);
+function printSpreadsheet(sheets, spreadsheetId, values) {
   const resource = {
     values
   };
-  let range = `Admin Tools!A2:B${2 + data.length - 1}`;
+  let range = `Admin Tools!E2:F${2 + values.length - 1}`;
   let valueInputOption = 'RAW';
   sheets.spreadsheets.values.update({
     spreadsheetId,
@@ -71,28 +71,43 @@ function printSpreadsheet(sheets, spreadsheetId, data) {
 
 function handlingSpreadsheet(sheets, spreadsheetId, rows) {
   let totalResult = [];
-  rows.sort((a, b) => a[0].localeCompare(b[0]));
+  rows.sort(function (a, b) {
+    if (a[0].toLowerCase().localeCompare(b[0].toLowerCase()) != 0)
+      return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
+    return a[1].localeCompare(b[1]);
+  });
   let i = 0;
   while (i < rows.length) {
-    let tmp = { "product": rows[i][0], "quantity": parseInt(rows[i][1], 10) };
     let j = i + 1;
-    while (j < rows.length && rows[i][0].localeCompare(rows[j][0]) === 0) {
-      tmp.quantity += parseInt(rows[j][1], 10);
+    let products = [{ "product": rows[i][1], "quantity": parseInt(rows[i][2], 10) }];
+    while (j < rows.length && rows[i][0].toLowerCase().localeCompare(rows[j][0].toLowerCase()) === 0) {
+      if (products[products.length - 1].product != rows[j][1])
+        products.push({ "product": rows[j][1], "quantity": parseInt(rows[j][2], 10) });
+      else
+        products[products.length - 1].quantity += parseInt(rows[j][2], 10);
       ++j;
     }
-    totalResult.push(tmp);
+    let combinedProducts = "";
+    for (let k = 0; k < products.length; ++k) {
+      if (products[k].quantity === 1)
+        combinedProducts += products[k].product;
+      else
+        combinedProducts += products[k].product + " * " + products[k].quantity.toString();
+      if (k < products.length - 1) combinedProducts += "\n";
+    }
+    totalResult.push([rows[i][0], combinedProducts]);
     i = j;
   }
   printSpreadsheet(sheets, spreadsheetId, totalResult);
 }
 
-function readSpreadsheet(auth) {
+function readSpreadsheet(auth, fromRow, toRow) {
   const sheets = google.sheets({ version: 'v4', auth });
   const spreadsheetId = '1UcmNyg_nh6mhRt_5q6Pj7IXzkRDx4A1pL3F2H6WL8MU';
 
   sheets.spreadsheets.values.get({
     spreadsheetId: spreadsheetId,
-    range: 'Form Records!D2:E5',
+    range: `Form Records!C${fromRow}:E${toRow}`,
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
     const rows = res.data.values;

@@ -95,46 +95,42 @@ export default function Form() {
   }
 
   return (
-    <div className="w-2/3 border-solid border-2 border-gray-300 rounded-md">
-      <form onSubmit={handleFormSubmit}>
-        <p className="indent-right font-weight-bold">* Required</p>
-        <div className="flex flex-wrap">
-          <div className="w-full">
-            <label for="email" className="block">Email*</label>
-            <input className="form-control my-input" type="email" id="email" value={email} onChange={handleEmailChange} placeholder="Your email" required />
+    <form className="w-1/2 p-16 border-solid border-2 border-teal-500 rounded-md" onSubmit={handleFormSubmit}>
+      <p className="text-right font-semibold">* Required</p>
+      <div className="w-full">
+        <label for="email" className="block my-4 font-semibold">Email*</label>
+        <input className="block mt-1 mb-2 pb-1 border-b border-teal-500 focus:outline-none" type="email" id="email" value={email} onChange={handleEmailChange} placeholder="Your email" required />
+      </div>
+      <div className="w-full">
+        <label for="username" className="block my-4 font-semibold">Username*</label>
+        <input className="block mt-1 mb-2 pb-1 border-b border-teal-500 focus:outline-none" type="text" id="username" value={username} onChange={handleUsernameChange} placeholder="Your username" required />
+      </div>
+      <div className="grid grid-cols-10 mt-4 mb-2">
+        <label className="col-span-4 font-semibold">Product*</label>
+        <label className="col-span-2 font-semibold">Quantity*</label>
+      </div>
+      {products.map((product, index) =>
+        <div className="grid grid-cols-10">
+          <div className="col-span-4 mr-3 my-1">
+            <ProductInput key={index} index={index} value={product.product} onInputChange={handleProductInputChange} />
+          </div>
+          <div className="col-span-2 mr-3 my-1">
+            <QuantityInput key={index} index={index} value={product.quantity} onInputChange={handleQuantityInputChange} />
+          </div>
+          <div className="col-span-2 mr-3 my-1">
+            <button className="w-full border border-teal-500 rounded-md py-1 disabled:opacity-50 disabled:pointer-events-auto disabled:cursor-not-allowed" key={index} type="button" onClick={() => handleDeleteClick(index)} disabled={products.length === 1}>Delete</button>
+          </div>
+          <div className="col-span-2 my-1">
+            {index === products.length - 1 ?
+              <button className="w-full border border-teal-500 rounded-md py-1" key={index} type="button" onClick={handleAddClick}>Add line</button> :
+              <div />
+            }
           </div>
         </div>
-        <div class="form-group">
-          <label for="username" className="font-weight-bold">Username*</label>
-          <input className="form-control my-input" type="text" id="username" value={username} onChange={handleUsernameChange} placeholder="Your username" required />
-        </div>
-        <div class="form-group">
-          <div class="form-row form-table">
-            <div class="col-5">
-              <label className="font-weight-bold">Product*</label>
-            </div>
-            <div class="col-3">
-              <label className="font-weight-bold">Quantity*</label>
-            </div>
-          </div>
-          {products.map((product, index) =>
-            <div className="form-row">
-              <div className="col-5">
-                <ProductInput key={index} index={index} value={product.product} onInputChange={handleProductInputChange} />
-              </div>
-              <div className="col-3">
-                <QuantityInput key={index} index={index} value={product.quantity} onInputChange={handleQuantityInputChange} />
-              </div>
-              <div className="col-2"><button className="form-control" key={index} type="button" onClick={() => handleDeleteClick(index)} disabled={products.length === 1}>Delete</button></div>
-              {index === products.length - 1 ?
-                <div className="col-2"><button className="form-control" key={index} type="button" onClick={handleAddClick}>Add line</button></div> :
-                <div className="col-2"></div>
-              }
-            </div>
-          )}
-        </div>
-        <button className="btn btn-primary" type="submit">Submit</button>
-      </form>
-    </div>
+      )}
+      <div className="w-full">
+        <button className="mt-6 bg-teal-500 rounded-md px-4 py-1 text-white" type="submit">Submit</button>
+      </div>
+    </form>
   );
 }

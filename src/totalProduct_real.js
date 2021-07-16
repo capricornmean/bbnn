@@ -49,11 +49,14 @@ function getNewToken(oAuth2Client, callback) {
 
 function printSpreadsheet(sheets, spreadsheetId, data) {
   let values = [];
-  for (let i = 0; i < data.length; ++i) values.push([data[i].product, data[i].quantity.toString()]);
+  for (let i = 0; i < data.length; ++i) {
+    let tmp = data[i].product.lastIndexOf('(');
+    values.push([data[i].product, data[i].quantity.toString(), , data[i].product.slice(tmp + 1, -1) + ' ' + data[i].quantity.toString() + '세트']);
+  }
   const resource = {
     values
   };
-  let range = `order!A40:B${40 + data.length - 1}`;
+  let range = `order!A1:D${1 + data.length - 1}`;
   let valueInputOption = 'RAW';
   sheets.spreadsheets.values.update({
     spreadsheetId,
@@ -71,9 +74,6 @@ function printSpreadsheet(sheets, spreadsheetId, data) {
 
 function handlingSpreadsheet(sheets, spreadsheetId, rows) {
   let totalResult = [];
-  // rows = rows.map(row => {
-  //   return [row[0].slice(0, row[0].lastIndexOf('(') - 1), row[1]];
-  // })
   rows.sort((a, b) => a[0].localeCompare(b[0]));
   let i = 0;
   while (i < rows.length) {
@@ -86,8 +86,7 @@ function handlingSpreadsheet(sheets, spreadsheetId, rows) {
     totalResult.push(tmp);
     i = j;
   }
-  console.log("ok");
-  //printSpreadsheet(sheets, spreadsheetId, totalResult);
+  printSpreadsheet(sheets, spreadsheetId, totalResult);
 }
 
 function readSpreadsheet(auth) {
@@ -96,7 +95,7 @@ function readSpreadsheet(auth) {
 
   sheets.spreadsheets.values.get({
     spreadsheetId: spreadsheetId,
-    range: 'Form Responses 1!D38:E79',
+    range: 'Form Responses 1!D68:E94',
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
     const rows = res.data.values;

@@ -24,4 +24,4 @@ yarn-error.log*
 
 # mykey
 src/key/*
-src/token.json
+src/server/token.json
