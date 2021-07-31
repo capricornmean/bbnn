@@ -56,7 +56,7 @@ function printSpreadsheet(sheets, spreadsheetId, data) {
   const resource = {
     values
   };
-  let range = `order!A1:D${1 + data.length - 1}`;
+  let range = `order!A19:D${19 + data.length - 1}`;
   let valueInputOption = 'RAW';
   sheets.spreadsheets.values.update({
     spreadsheetId,
@@ -90,17 +90,18 @@ function handlingSpreadsheet(sheets, spreadsheetId, rows) {
 }
 
 function readSpreadsheet(auth) {
+  console.log(auth);
   const sheets = google.sheets({ version: 'v4', auth });
   const spreadsheetId = '1DAnX3DpW95NwsqPDgjF0DRS8OTrE9u6Wp55m4UmfLFM';
 
   sheets.spreadsheets.values.get({
     spreadsheetId: spreadsheetId,
-    range: 'Form Responses 1!D68:E94',
+    range: 'Form Responses 1!D46:E70',
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
     const rows = res.data.values;
     if (rows.length) {
-      handlingSpreadsheet(sheets, spreadsheetId, rows);
+      //handlingSpreadsheet(sheets, spreadsheetId, rows);
     } else {
       console.log('No data found.');
     }

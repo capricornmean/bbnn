@@ -1,4 +1,5 @@
 import fs from 'fs';
+import util from 'util';
 import readline from 'readline';
 import { google } from "googleapis";
 
@@ -6,25 +7,32 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 const TOKEN_PATH = 'token.json';
 
 export default function totalProduct(fromRow, toRow) {
-  fs.readFile('../key/spreadsheet_key.json', (err, content) => {
-    if (err) return console.log('Error loading client secret file:', err);
-    authorize(JSON.parse(content), readSpreadsheet, fromRow, toRow);
-  });
+  try {
+    let content = fs.readFileSync('../key/spreadsheet_key.json');
+    return authorize(JSON.parse(content), readSpreadsheet, fromRow, toRow);
+  }
+  catch (err) {
+    return 'Error loading client secret file:' + err;
+  }
 }
+
+totalProduct(3, 4);
 
 function authorize(credentials, callback, fromRow, toRow) {
   const { client_secret, client_id, redirect_uris } = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
     client_id, client_secret, redirect_uris[0]);
-
-  fs.readFile(TOKEN_PATH, (err, token) => {
-    if (err) return getNewToken(oAuth2Client, callback);
+  try {
+    let token = fs.readFileSync(TOKEN_PATH);
     oAuth2Client.setCredentials(JSON.parse(token));
-    callback(oAuth2Client, fromRow, toRow);
-  });
+    return callback(oAuth2Client, fromRow, toRow);
+  }
+  catch (err) {
+    return getNewToken(oAuth2Client, callback);
+  }
 }
 
-function getNewToken(oAuth2Client, callback) {
+async function getNewToken(oAuth2Client, callback) {
   const authUrl = oAuth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
@@ -34,41 +42,51 @@ function getNewToken(oAuth2Client, callback) {
     input: process.stdin,
     output: process.stdout,
   });
-  rl.question('Enter the code from that page here: ', (code) => {
-    rl.close();
-    oAuth2Client.getToken(code, (err, token) => {
-      if (err) return console.error('Error while trying to retrieve access token', err);
-      oAuth2Client.setCredentials(token);
+  const question = util.promisify(rl.question).bind(rl);
+  try {
+    let code = await question('Enter the code from that page here: ');
+    try {
+      let token = await oAuth2Client.getToken(code);
+      await oAuth2Client.setCredentials(token);
       // Store the token to disk for later program executions
-      fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
-        if (err) return console.error(err);
+      try {
+        fs.writeFileSync(TOKEN_PATH, JSON.stringify(token));
         console.log('Token stored to', TOKEN_PATH);
-      });
-      callback(oAuth2Client);
-    });
-  });
+      }
+      catch (err) {
+        return err;
+      };
+      return callback(oAuth2Client);
+    }
+    catch (err) {
+      return 'Error while trying to retrieve access token' + err;
+    }
+  }
+  catch (err) {
+    return 'Question rejected' + err;
+  }
 }
 
-function printSpreadsheet(sheets, spreadsheetId, data) {
+async function printSpreadsheet(sheets, spreadsheetId, data) {
   let values = [];
   for (let i = 0; i < data.length; ++i) values.push([data[i].product, data[i].quantity.toString()]);
   const resource = {
     values
   };
-  let range = `Admin Tools!A2:B${2 + data.length - 1}`;
   let valueInputOption = 'RAW';
-  sheets.spreadsheets.values.update({
-    spreadsheetId,
-    range,
-    valueInputOption,
-    resource,
-  }, (err, result) => {
-    if (err) {
-      return err;
-    } else {
-      return result;
-    }
-  });
+  let range = `Admin Tools!A2:B${2 + data.length - 1}`;
+  try {
+    let result = await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range,
+      valueInputOption,
+      resource,
+    });
+    return result;
+  }
+  catch (err) {
+    return err;
+  }
 }
 
 function handlingSpreadsheet(sheets, spreadsheetId, rows) {
@@ -88,20 +106,24 @@ function handlingSpreadsheet(sheets, spreadsheetId, rows) {
   printSpreadsheet(sheets, spreadsheetId, totalResult);
 }
 
-function readSpreadsheet(auth, fromRow, toRow) {
+async function readSpreadsheet(auth, fromRow, toRow) {
+  console.log(fromRow, toRow);
   const sheets = google.sheets({ version: 'v4', auth });
-  const spreadsheetId = '1UcmNyg_nh6mhRt_5q6Pj7IXzkRDx4A1pL3F2H6WL8MU';
-
-  sheets.spreadsheets.values.get({
-    spreadsheetId: spreadsheetId,
+  const request = {
+    spreadsheetId: '1UcmNyg_nh6mhRt_5q6Pj7IXzkRDx4A1pL3F2H6WL8MU',
     range: `Form Records!D${fromRow}:E${toRow}`,
-  }, (err, res) => {
-    if (err) return console.log('The API returned an error: ' + err);
-    const rows = res.data.values;
+  }
+  try {
+    let res = await sheets.spreadsheets.values.get(request);
+    let rows = res.data.values;
     if (rows.length) {
-      handlingSpreadsheet(sheets, spreadsheetId, rows);
+      return handlingSpreadsheet(sheets, spreadsheetId, rows);
     } else {
-      console.log('No data found.');
+      return 'No data found.';
     }
-  });
+  }
+  catch (err) {
+    console.log(err);
+    return 'The API returned an error: ' + err;
+  }
 }
