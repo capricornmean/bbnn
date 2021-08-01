@@ -21,7 +21,15 @@ export default function Spreadsheet() {
       })
     })
       .then(response => response.text())
-      .then(data => console.log(data));
+      .then(data => {
+        if (data === "OK") {
+          setFromTotalProduct("");
+          setToTotalProduct("");
+        }
+        else {
+          
+        }
+      });
   }
 
   function handleTotalPerUserSubmit(e) {
@@ -38,7 +46,15 @@ export default function Spreadsheet() {
       })
     })
       .then(response => response.text())
-      .then(data => console.log(data));
+      .then(data => {
+        if (data === "OK") {
+          setFromTotalPerUser("");
+          setToTotalPerUser("");
+        }
+        else {
+          
+        }
+      });
   }
 
   function handleTotalProductFromInput(e) {

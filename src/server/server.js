@@ -20,18 +20,18 @@ app.post('/login', function (req, res) {
   res.send("Login success.");
 });
 
-app.post('/totalProduct', function (req, res) {
+app.post('/totalProduct', async function (req, res) {
   const fromRow = req.body.fromRow;
   const toRow = req.body.toRow;
-  totalProduct(fromRow, toRow);
-  res.send("Calculated Total Product");
+  let result = await totalProduct(fromRow, toRow);
+  res.send(result);
 });
 
-app.post('/totalPerUser', function (req, res) {
+app.post('/totalPerUser', async function (req, res) {
   const fromRow = req.body.fromRow;
   const toRow = req.body.toRow;
-  totalPerUser(fromRow, toRow);
-  res.send("Calculated Total Per User");
+  let result = await totalPerUser(fromRow, toRow);
+  res.send(result);
 });
 
 app.listen(port, () => console.log(`API is running on http://localhost:${port}`));
