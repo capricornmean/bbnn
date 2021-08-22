@@ -4,20 +4,32 @@ import totalPerUser from './totalPerUser.js';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import express from "express";
+import crypto from 'crypto';
 
 const app = express();
 const port = 8080;
 
-app.use(cors());
+//app.use(cors());
+app.use(cors({ credentials: true, origin: 'http://localhost:3000' }));
 
 // Configuring body parser middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+function generateAuthToken() {
+  return crypto.randomBytes(30).toString('hex');
+}
+
 app.post('/login', function (req, res) {
-  const body = req.body;
-  console.log(body);
-  res.send("Login success.");
+  let user = req.body;
+  console.log(user);
+  if (user.username == 'a' && user.password == 'a') {
+    const authToken = generateAuthToken();
+    res.send({ token: authToken });
+  }
+  else {
+    res.send({ token: "" });
+  }
 });
 
 app.post('/totalProduct', async function (req, res) {
