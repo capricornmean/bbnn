@@ -56,7 +56,7 @@ function printSpreadsheet(sheets, spreadsheetId, data) {
   const resource = {
     values
   };
-  let range = `order!A32:D${32 + data.length - 1}`;
+  let range = `order!A28:D${28 + data.length - 1}`;
   let valueInputOption = 'RAW';
   sheets.spreadsheets.values.update({
     spreadsheetId,
@@ -95,7 +95,7 @@ function readSpreadsheet(auth) {
 
   sheets.spreadsheets.values.get({
     spreadsheetId: spreadsheetId,
-    range: 'Form Responses 1!D81:E103',
+    range: 'Form Responses 1!D61:E86',
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
     const rows = res.data.values;

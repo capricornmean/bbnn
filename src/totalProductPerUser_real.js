@@ -51,8 +51,8 @@ function printSpreadsheet(sheets, spreadsheetId, values) {
   const resource = {
     values
   };
-  let range = `order!A46:B${46 + values.length - 1}`;
-  let valueInputOption = 'RAW';
+  let range = `order!A28:E${28 + values.length - 1}`;
+  let valueInputOption = 'USER_ENTERED';
   sheets.spreadsheets.values.update({
     spreadsheetId,
     range,
@@ -67,53 +67,93 @@ function printSpreadsheet(sheets, spreadsheetId, values) {
   });
 }
 
-function handlingSpreadsheet(sheets, spreadsheetId, rows) {
+function calculateProfit(products, prices) {
+  let res = [0, 0, 0];
+  for (let i = 0; i < products.length; ++i)
+    for (let j = 0; j < prices.length; ++j) {
+      if (products[i].product === prices[j][0]) {
+        res[0] += parseInt(prices[j][1], 10);
+        res[1] += parseInt(prices[j][2], 10);
+        res[2] += parseInt(prices[j][3], 10);
+        break;
+      }
+    }
+  return res;
+}
+
+async function handlingSpreadsheet(sheets, spreadsheetId, orders, prices) {
   let totalResult = [];
-  rows = rows.map(row => [row[0].toLowerCase().trim(), row[1].slice(0, row[1].lastIndexOf('(')) + "set", row[2]]);
-  rows.sort(function (a, b) {
+  orders = orders.map(order => [order[0].toLowerCase().trim(), order[1], order[2]]);
+  orders.sort(function (a, b) {
     if (a[0].localeCompare(b[0]) != 0)
       return a[0].localeCompare(b[0]);
     return a[1].localeCompare(b[1]);
   });
   let i = 0;
-  while (i < rows.length) {
+  while (i < orders.length) {
     let j = i + 1;
-    let products = [{ "product": rows[i][1], "quantity": parseInt(rows[i][2], 10) }];
-    while (j < rows.length && rows[i][0].localeCompare(rows[j][0]) === 0) {
-      if (products[products.length - 1].product != rows[j][1])
-        products.push({ "product": rows[j][1], "quantity": parseInt(rows[j][2], 10) });
+    let products = [{ "product": orders[i][1], "quantity": parseInt(orders[i][2], 10) }];
+    while (j < orders.length && orders[i][0].localeCompare(orders[j][0]) === 0) {
+      if (products[products.length - 1].product != orders[j][1])
+        products.push({ "product": orders[j][1], "quantity": parseInt(orders[j][2], 10) });
       else
-        products[products.length - 1].quantity += parseInt(rows[j][2], 10);
+        products[products.length - 1].quantity += parseInt(orders[j][2], 10);
       ++j;
     }
+    let profit = calculateProfit(products, prices);
     let combinedProducts = "";
     for (let k = 0; k < products.length; ++k) {
       if (products[k].quantity === 1)
-        combinedProducts += products[k].product;
+        combinedProducts += products[k].product.slice(0, products[k].product.lastIndexOf('(')) + "set";
       else
-        combinedProducts += products[k].product + " * " + products[k].quantity.toString();
+        combinedProducts += products[k].product.slice(0, products[k].product.lastIndexOf('(')) + " * "
+          + products[k].quantity.toString();
       if (k < products.length - 1) combinedProducts += "\n";
     }
-    totalResult.push([rows[i][0], combinedProducts]);
+    totalResult.push([orders[i][0], combinedProducts, profit[0].toString(), profit[1].toString(), profit[2].toString()]);
     i = j;
   }
   printSpreadsheet(sheets, spreadsheetId, totalResult);
 }
 
-function readSpreadsheet(auth) {
-  const sheets = google.sheets({ version: 'v4', auth });
-  const spreadsheetId = '1DAnX3DpW95NwsqPDgjF0DRS8OTrE9u6Wp55m4UmfLFM';
-
-  sheets.spreadsheets.values.get({
+async function getPrices(sheets, spreadsheetId) {
+  const request = {
     spreadsheetId: spreadsheetId,
-    range: 'Form Responses 1!C81:E103',
-  }, (err, res) => {
-    if (err) return console.log('The API returned an error: ' + err);
-    const rows = res.data.values;
-    if (rows.length) {
-      handlingSpreadsheet(sheets, spreadsheetId, rows);
+    range: 'price!A2:D27',
+  }
+  try {
+    let res = await sheets.spreadsheets.values.get(request);
+    return res.data.values;
+  }
+  catch (err) {
+    console.log(err);
+    return 'The API returned an error: ' + err;
+  }
+}
+
+async function getOrders(sheets, spreadsheetId, prices) {
+  const request = {
+    spreadsheetId: spreadsheetId,
+    range: 'Form Responses 1!C53:E60',
+  }
+  try {
+    let res = await sheets.spreadsheets.values.get(request);
+    const orders = res.data.values;
+    if (orders.length) {
+      handlingSpreadsheet(sheets, spreadsheetId, orders, prices);
     } else {
       console.log('No data found.');
     }
-  });
+  }
+  catch (err) {
+    console.log(err);
+    return 'The API returned an error: ' + err;
+  }
+}
+
+async function readSpreadsheet(auth) {
+  const sheets = google.sheets({ version: 'v4', auth });
+  const spreadsheetId = '1DAnX3DpW95NwsqPDgjF0DRS8OTrE9u6Wp55m4UmfLFM';
+  let prices = await getPrices(sheets, spreadsheetId);
+  await getOrders(sheets, spreadsheetId, prices);
 }
